@@ -71,8 +71,6 @@ def get_followers(cookie, name, username, f):
     def retrive_followers_content(cookie, username):
         url = "https://weibo.cn/%s?display=0&retcode=6102" % username
         response = utils.request(url, "html", cookies=cookie)
-        with open('direction.html', "w") as f:
-            print(response.r.content, file=f)
         return response
 
     def extract_follower_from_content(content):
