@@ -66,11 +66,13 @@ def get_cookie():
     return cookie_response.get_cookie_data()
 
 
-def get_followers(cookie, username, f):
+def get_followers(cookie, name, username, f):
 
     def retrive_followers_content(cookie, username):
         url = "https://weibo.cn/%s?display=0&retcode=6102" % username
         response = utils.request(url, "html", cookies=cookie)
+        with open('direction.html', "w") as f:
+            print(response.r.content, file=f)
         return response
 
     def extract_follower_from_content(content):
@@ -85,7 +87,7 @@ def get_followers(cookie, username, f):
     start_time = response.start_time.strftime("%Y%m%d,%H:%M:%S.%f")
     finish_time = response.finish_time.strftime("%Y%m%d,%H:%M:%S.%f")
     followers = extract_follower_from_content(response.get_html())
-    print(utils.to_csv_line(start_time, finish_time, username, followers), file=f)
+    print(utils.to_csv_line(start_time, finish_time, name, username, followers), file=f)
 
 
 def get_hotness(cookie, f):
@@ -116,7 +118,7 @@ def get_hotness(cookie, f):
 
 def print_follower_count_header(f):
 
-    print(utils.to_csv_line("start_date", "start_time", "finish_date", "finish_time",
+    print(utils.to_csv_line("start_date", "start_time", "finish_date", "finish_time", "name",
                             "username", "follower_count"), file=f)
 
 
@@ -126,23 +128,51 @@ def print_hotness_header(f):
                             "name", "likehood", "mentioned", "interaction", "cheer_card"), file=f)
 
 
-if __name__ == "__main__":
+def get_all_followers(cookie):
+    date = datetime.date.today().strftime("%Y%m%d")
+    filename = "%s_follower_counts.csv" % date
 
-    cookie = get_cookie()
+    usernames = []
+    with open("weibo_ids.csv") as f:
+        for line in f.readlines():
+            segs = line.strip().split(",")
+            name = segs[0].decode("GB2312").encode("utf-8")
+            username = segs[2]
+            if username == "id":
+                continue
+            usernames.append((name, username))
 
-    time = datetime.date.today().strftime("%Y%m%d")
-    filename = "%s_follower_counts.csv" % time
     is_file = os.path.isfile(filename)
     with open(filename, "a") as f:
         if not is_file:
             print_follower_count_header(f)
-        username = "caizicaixukun"
-        get_followers(cookie, username, f)
+        # username = "caizicaixukun"
+        for name, username in usernames:
+            try:
+                get_followers(cookie, name, username, f)
+            except:
+                date = datetime.date.today().strftime("%Y%m%d")
+                time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
+                with open(".%s_error.log" % date, "a") as f_err:
+                    print("Failed", time, name, username, file=f_err)
+    return filename
 
-    time = datetime.date.today().strftime("%Y%m%d")
-    filename = "%s_hotness.csv" % time
+
+def get_all_hotness(cookie):
+    date = datetime.date.today().strftime("%Y%m%d")
+    filename = "%s_hotness.csv" % date
     is_file = os.path.isfile(filename)
     with open(filename, "a") as f:
         if not is_file:
             print_hotness_header(f)
         get_hotness(cookie, f)
+    return filename
+
+
+if __name__ == "__main__":
+
+    cookie = get_cookie()
+    filename = get_all_followers(cookie)
+    print(filename)
+    filename = get_all_hotness(cookie)
+    print(filename)

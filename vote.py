@@ -39,3 +39,4 @@ if __name__ == "__main__":
             print_header(f)
         for option in options:
             print(utils.to_csv_line(*extract_option(option)), file=f)
+    print(filename)
