@@ -1,12 +1,14 @@
-*log.txt
-*.swp
-*.pyc
-.DS_Store
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+*log.txt
+*.swp
+*.pyc
+.DS_Store
+weibo_ids.csv
+
 
 # C extensions
 *.so
