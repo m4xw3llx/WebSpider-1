@@ -7,6 +7,10 @@ __pycache__/
 *.swp
 *.pyc
 .DS_Store
+*_follower_counts.csv
+*_gift_counts.csv
+*_hotness.csv
+*_vedio_watch_counts.csv
 weibo_ids.csv
 
 
