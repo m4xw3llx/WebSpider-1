@@ -25,18 +25,23 @@ def print_header(f):
 
 if __name__ == "__main__":
 
-    url = "http://vote.i.iqiyi.com/eagle/outer/get_votes?uid=null&vids=0536210296010472&t=1518343644386"
-    response = utils.request(url, "json")
-    data = response.get_json_data()
+    utils.log_print("[** LOG **] Run vote with")
+    try:
+        url = "http://vote.i.iqiyi.com/eagle/outer/get_votes?uid=null&vids=0536210296010472&t=1518343644386"
+        response = utils.request(url, "json")
+        data = response.get_json_data()
 
-    options = get_options(data)
+        options = get_options(data)
 
-    time = datetime.date.today().strftime("%Y%m%d")
-    filename = "%s_gift_counts.csv" % time
-    is_file = os.path.isfile(filename)
-    with open(filename, "a") as f:
-        if not is_file:
-            print_header(f)
-        for option in options:
-            print(utils.to_csv_line(*extract_option(option)), file=f)
-    print(filename)
+        time = datetime.date.today().strftime("%Y%m%d")
+        filename = "%s_gift_counts.csv" % time
+        is_file = os.path.isfile(filename)
+        with open(filename, "a") as f:
+            if not is_file:
+                print_header(f)
+            for option in options:
+                print(utils.to_csv_line(*extract_option(option)), file=f)
+        utils.log_print("[** LOG **] Succeed running vote with")
+        print(filename)
+    except:
+        utils.log_print("[** ERROR LOG **] Failed running vote with")

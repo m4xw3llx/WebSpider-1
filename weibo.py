@@ -62,8 +62,11 @@ def get_cookie():
                "Referer": "https://passport.weibo.cn/signin/login",
                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36"}
     url = "https://passport.weibo.cn/sso/login"
-    cookie_response = utils.request(url, "cookie", data=payload, headers=headers)
-    return cookie_response.get_cookie_data()
+    response = utils.request(url, "cookie", data=payload, headers=headers)
+    if response is not None:
+        return response.get_cookie_data()
+    else:
+        return None
 
 
 def get_followers(cookie, name, username, f):
@@ -82,6 +85,8 @@ def get_followers(cookie, name, username, f):
         return followers
 
     response = retrive_followers_content(cookie, username)
+    if response is None:
+        return
     start_time = response.start_time.strftime("%Y%m%d,%H:%M:%S.%f")
     finish_time = response.finish_time.strftime("%Y%m%d,%H:%M:%S.%f")
     followers = extract_follower_from_content(response.get_html())
@@ -99,6 +104,8 @@ def get_hotness(cookie, f):
 
     url = "http://energy.tv.weibo.cn/e/10173/index?display=0&retcode=6102"
     response = utils.request(url, "html", cookies=cookie)
+    if response is None:
+        return
     start_time = response.start_time.strftime("%Y%m%d,%H:%M:%S.%f")
     finish_time = response.finish_time.strftime("%Y%m%d,%H:%M:%S.%f")
 
@@ -146,9 +153,12 @@ def get_all_followers(cookie):
             print_follower_count_header(f)
         # username = "caizicaixukun"
         for name, username in usernames:
+            utils.log_print("[** LOG **] Get followers %s" % name)
             try:
                 get_followers(cookie, name, username, f)
+                utils.log_print("[** LOG **] Succeed getting followers %s" % name)
             except:
+                utils.log_print("[** ERROR LOG **] Failed getting followers %s" % name)
                 date = datetime.date.today().strftime("%Y%m%d")
                 time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
                 with open(".%s_error.log" % date, "a") as f_err:
@@ -169,8 +179,27 @@ def get_all_hotness(cookie):
 
 if __name__ == "__main__":
 
-    cookie = get_cookie()
-    filename = get_all_followers(cookie)
-    print(filename)
-    filename = get_all_hotness(cookie)
-    print(filename)
+    utils.log_print("[** LOG **] Get cookie")
+    try:
+        cookie = get_cookie()
+        if cookie is None:
+            utils.log_print("[** ERROR LOG **] Failed getting cookie")
+            exit(1)
+        utils.log_print("[** LOG **] Succeed getting cookie")
+    except:
+        utils.log_print("[** ERROR LOG **] Failed getting cookie")
+
+    try:
+        filename = get_all_followers(cookie)
+        utils.log_print("[** LOG **] Succeed getting followers")
+        print(filename)
+    except:
+        utils.log_print("[** ERROR LOG **] Failed getting followers")
+
+    utils.log_print("[** LOG **] Get hotness")
+    try:
+        filename = get_all_hotness(cookie)
+        utils.log_print("[** LOG **] Succeed getting hotness")
+        print(filename)
+    except:
+        utils.log_print("[** ERROR LOG **] Failed getting hotness")

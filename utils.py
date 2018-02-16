@@ -6,6 +6,17 @@ import datetime
 import sys
 
 
+def log_print(string):
+
+    date = datetime.date.today().strftime("%Y%m%d")
+    time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
+
+    filename = ".%s_simple_log.txt" % date
+    with open(filename, "a") as f:
+        print(time, string, file=f)
+        print(time, string, file=sys.stderr)
+
+
 def to_csv_line(*args):
     """Helper function to put outputs into ',' sperated csv format for future usage
     """
@@ -15,7 +26,7 @@ def to_csv_line(*args):
 
 def request(url, res_type, **kwargs):
     if "timeout" not in kwargs:
-        kwargs["timeout"] = 5
+        kwargs["timeout"] = 10
 
     if res_type == "json":
         ResClass = JSONResponse
