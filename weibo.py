@@ -27,13 +27,13 @@ r = requests.get(url, cookies={"Cookie": "_T_WM=ec1a4454c0d9d6d28bb947142ca09f4f
 """
 
 # in case old cookie method fails
-def get_cookie_with_selenium():
+def get_cookie_with_selenium(username, password):
     chromePath = "/usr/local/bin/chromedriver"
     wd = webdriver.Chrome(executable_path=chromePath)
     loginUrl = 'http://www.weibo.com/login.php'
     wd.get(loginUrl)
-    wd.find_element_by_xpath('//*[@id="loginname"]').send_keys('wanshendujiequ@yahoo.com')
-    wd.find_element_by_xpath('//*[@id="pl_login_form"]/div/div[3]/div[2]/div/input').send_keys('Lg590219')
+    wd.find_element_by_xpath('//*[@id="loginname"]').send_keys(username)
+    wd.find_element_by_xpath('//*[@id="pl_login_form"]/div/div[3]/div[2]/div/input').send_keys(password)
     wd.find_element_by_xpath('//*[@id="pl_login_form"]/div/div[3]/div[6]/a').click()
 
     req = requests.Session()
@@ -116,7 +116,7 @@ def get_chart(cookie):
     # get_followers(cookie, "caixukun")
 
 def get_post_data(cookie):
-    username = "1776448504"  # change username freely
+    username = "1776448504"  # TODO: change username freely
     url = "https://weibo.cn/%s" % username
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "lxml")
@@ -267,6 +267,6 @@ def get_all_followers(cookie):
 
 if __name__ == "__main__":
     username, password = sys.argv[1], sys.argv[2]
-    # cookie = get_cookie()
+    # cookie = get_cookie(username, password)
     # get_chart(cookie)
-    get_cookie_with_selenium()
+    get_cookie_with_selenium(username, password)
