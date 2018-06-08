@@ -25,12 +25,31 @@ r = requests.get(url, cookies={"Cookie": "_T_WM=ec1a4454c0d9d6d28bb947142ca09f4f
 
 """
 
+# in case old cookie method fails
+def get_cookie_with_selenium():
+    chromePath = "/usr/local/bin/chromedriver"
+    wd = webdriver.Chrome(executable_path=chromePath)
+    loginUrl = 'http://www.weibo.com/login.php'
+    wd.get(loginUrl)
+    wd.find_element_by_xpath('//*[@id="loginname"]').send_keys('wanshendujiequ@yahoo.com')
+    wd.find_element_by_xpath('//*[@id="pl_login_form"]/div/div[3]/div[2]/div/input').send_keys('Lg590219')
+    wd.find_element_by_xpath('//*[@id="pl_login_form"]/div/div[3]/div[6]/a').click()
+
+    req = requests.Session()
+    cookies = wd.get_cookies()
+    print(cookies)
+    for cookie in cookies:
+        req.cookies.set(cookie["name"], cookie["value"])
+    url = "http://chart.weibo.com/chart?rank_type=6&version=v1"
+    r = req.get(url)
+    print(r.content)
+
 
 # Manually concatenate cookies from response header
-def get_cookie():
+def get_cookie(username, password):
 
-    payload = {"username": "wanshendujiequ@yahoo.com",
-               "password": "Lg590219",
+    payload = {"username": username,
+               "password": password,
                "savestate": "1",
                "ec": "0",
                "entry": "mweibo",
@@ -243,5 +262,6 @@ def get_all_followers(cookie):
 
 
 if __name__ == "__main__":
-    cookie = get_cookie()
-    get_chart(cookie)
+    #cookie = get_cookie()
+    #get_chart(cookie)
+    get_cookie_with_selenium()
