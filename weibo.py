@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 import datetime
 import os
 import json
+import sys
 
 
 """
@@ -81,6 +82,7 @@ curl -H 'Host: chart.weibo.com'
     --compressed 'http://chart.weibo.com/chart?rank_type=6'
 '''
 
+# This method is used to caluclate the post on chart.weibo.com and recording their four features.
 def get_chart(cookie):
 
     headers = {
@@ -111,12 +113,10 @@ def get_chart(cookie):
                 loveness_num = loveness_div.find_all("span", class_="pro_num")[0].text
                 print(name, read_num, interaction_num, affection_num, loveness_num)
 
+    # get_followers(cookie, "caixukun")
 
-    #get_followers(cookie, "caixukun")
-
-def get_post_data():
+def get_post_data(cookie):
     username = "1776448504"
-    name = "caixukun"
     url = "https://weibo.cn/%s" % username
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "lxml")
@@ -138,7 +138,7 @@ def get_post_data():
         }
         data = requests.get(url, headers=headers)
         data = json.loads(data.content)
-        
+
         for a in div.find_all("a"):
             if a.text.encode("utf-8").startswith("评论"):
                 print(username, div_id, mid, "".join(re.findall("[(\d+)]", a.text.encode("utf-8"))))
@@ -150,10 +150,9 @@ def get_post_data():
 
 
 ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
- 
 def base62_encode(num, alphabet=ALPHABET):
+
     """Encode a number in Base X
- 
     `num`: The number to encode
     `alphabet`: The alphabet to use for encoding
     """
@@ -167,10 +166,10 @@ def base62_encode(num, alphabet=ALPHABET):
         arr.append(alphabet[rem])
     arr.reverse()
     return ''.join(arr)
- 
+
 def base62_decode(string, alphabet=ALPHABET):
     """Decode a Base X encoded string into the number
- 
+
     Arguments:
     - `string`: The encoded string
     - `alphabet`: The alphabet to use for encoding
@@ -178,13 +177,13 @@ def base62_decode(string, alphabet=ALPHABET):
     base = len(alphabet)
     strlen = len(string)
     num = 0
- 
+
     idx = 0
     for char in string:
         power = (strlen - (idx + 1))
         num += alphabet.index(char) * (base ** power)
         idx += 1
- 
+
     return num
 
 def url_to_mid(url):
@@ -221,14 +220,17 @@ def get_followers(cookie, name):
     username = "caizicaixukun"
     response = retrive_followers_content(cookie, username)
     if response is None:
-        return
+        return None
     start_time = response.start_time.strftime("%Y%m%d,%H:%M:%S.%f")
     finish_time = response.finish_time.strftime("%Y%m%d,%H:%M:%S.%f")
     followers = extract_follower_from_content(response.get_html())
-    print(start_time, finish_time, name, username, followers)
+    return start_time, finish_time, name, username, followers
 
 
 def get_all_followers(cookie):
+    def print_follower_count_header(f):
+        raise
+
     date = datetime.date.today().strftime("%Y%m%d")
     filename = "%s_follower_counts.csv" % date
 
@@ -249,19 +251,22 @@ def get_all_followers(cookie):
         # username = "caizicaixukun"
         for name, username in usernames:
             utils.log_print("[** LOG **] Get followers %s" % name)
-            try:
-                get_followers(cookie, name, username)
-                utils.log_print("[** LOG **] Succeed getting followers %s" % name)
-            except:
+            res = get_followers(cookie, name, username)
+            if res is None:
                 utils.log_print("[** ERROR LOG **] Failed getting followers %s" % name)
                 date = datetime.date.today().strftime("%Y%m%d")
                 time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
                 with open(".%s_error.log" % date, "a") as f_err:
                     print("Failed", time, name, username, file=f_err)
+            else:
+                utils.log_print("[** LOG **] Succeed getting followers %s" % name)
+                start_time, finish_time, name, username, followers = res
+                print(start_time, finish_time, name, username, followers)
     return filename
 
 
 if __name__ == "__main__":
-    #cookie = get_cookie()
-    #get_chart(cookie)
+    username, password = sys.argv[1], sys.argv[2]
+    # cookie = get_cookie()
+    # get_chart(cookie)
     get_cookie_with_selenium()
