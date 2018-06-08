@@ -116,7 +116,7 @@ def get_chart(cookie):
     # get_followers(cookie, "caixukun")
 
 def get_post_data(cookie):
-    username = "1776448504"
+    username = "1776448504"  # change username freely
     url = "https://weibo.cn/%s" % username
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "lxml")
