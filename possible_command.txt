@@ -1,0 +1,10 @@
+curl 'https://m.weibo.cn/api/container/getIndex?containerid=10080817c0fee819b9c79696a382f9634dbd87_-_main' \
+-H 'cookie: _T_WM=e6fd05d30732ca7a1f8612872a0bb08b; WEIBOCN_FROM=1110006030; SUB=_2A252GNkMDeThGeVM6FQZ9yvOyD6IHXVV4udErDV6PUJbkdBeLWPukW1NTKWBvih8J93W6Kw_pla4wpOwP52q-nh4; SUHB=0A0ZwN1xF4hhwk; SCF=AntGket3We89tf94yNgVmbplF-AcIlY3dlcQHg2F0sQ5KUnd72pjMSmqrgeL_5HGyu8gqKzvEQzms8nDvJTZmVI.; SSOLoginState=1528605021; MLOGIN=1; M_WEIBOCN_PARAMS=luicode%3D10000011%26lfid%3D10080817c0fee819b9c79696a382f9634dbd87_-_main%26fid%3D10080817c0fee819b9c79696a382f9634dbd87%26uicode%3D10000011' \
+-H 'accept-encoding: gzip, deflate, br' \
+-H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8' \
+-H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36' \
+-H 'accept: application/json, text/plain, */*' \
+-H 'referer: https://m.weibo.cn/p/10080817c0fee819b9c79696a382f9634dbd87' \
+-H 'authority: m.weibo.cn' \
+-H 'x-requested-with: XMLHttpRequest' \
+--compressed
