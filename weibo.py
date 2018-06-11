@@ -46,8 +46,27 @@ def get_cookie_with_selenium(username, password):
     print(r.content)
 
 
-# Manually concatenate cookies from response header
+class Cookie(object):
+
+    def __init__(self):
+        self.cookie_parts = {}
+
+    def set(self, key, value):
+        self.cookie_parts[key] = value
+
+    def get_cookie(self):
+        cookies = []
+        for key, value in self.cookie_parts.items():
+            cookies.append("%s=%s" % (key, value))
+        return " ".join(cookies)
+
+
+# 获取微博登录的cookie，分三步。第一步登录，获取SUB, SUHB, SCF和SSOLogin
+# 然后读取https://m.weibo.cn，获取M_WEIBOCN_PARAMS和_T_WM
+# 最后登录独立超话，获取WEIBOCN_FROM并更新M_WEIBOCN_PARAMS
 def get_cookie(username, password):
+
+    cookie = Cookie()
 
     payload = {"username": username,
                "password": password,
@@ -64,11 +83,64 @@ def get_cookie(username, password):
                "Referer": "https://passport.weibo.cn/signin/login",
                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36"}
     url = "https://passport.weibo.cn/sso/login"
-    response = utils.request(url, "cookie", data=payload, headers=headers)
-    if response is not None:
-        return response.get_cookie_data()
-    else:
-        return None
+    response = requests.post(url, data=payload, headers=headers)
+    
+    for info in response.headers["Set-Cookie"].split():
+        if info.startswith("SUB=") or info.startswith("SUHB=") or info.startswith("SCF=") or info.startswith("SSOLoginState="):
+            key, value = info.split("=")
+            cookie.set(key, value)
+
+    '''
+    curl 'https://m.weibo.cn/' 
+    -H 'authority: m.weibo.cn' 
+    -H 'upgrade-insecure-requests: 1' 
+    -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36' 
+    -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' 
+    -H 'referer: https://passport.weibo.cn/signin/login?entry=mweibo&res=wel&wm=3349&r=https%3A%2F%2Fm.weibo.cn%2F' 
+    -H 'accept-encoding: gzip, deflate, br' 
+    -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7' 
+    -H 'cookie: SUB=_2A252GUo0DeThGeVM6FQZ9yvOyD6IHXVV4lZ8rDV6PUJbkdBeLRbikW1NTKWBvlMd6utP8-GniJG48Z69mYN_MLcM; SUHB=0QSp1-7WD51Jix; SCF=Aj52M7AisY2zemY_Am0nKcL71Og-kwj4KrbW9HkL8O511BUUv7LFPRgmmi6VLFtweCnnDEZFxb6DXYNUEBPSkx8.; SSOLoginState=1528642148' 
+    --compressed
+    '''
+    headers = {
+        "authority": "m.weibo.cn",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+        "referer": "https://passport.weibo.cn/signin/login?entry=mweibo&res=wel&wm=3349&r=https%3A%2F%2Fm.weibo.cn%2F",
+        "accept-encoding": "gzip, deflate, br",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
+        "cookie": cookie.get_cookie()
+    }
+    url = "https://m.weibo.cn"
+    response = requests.get(url, headers=headers)
+    for info in response.headers["Set-Cookie"].split():
+        if info.startswith("M_WEIBOCN_PARAMS") or info.startswith("_T_WM"):
+            key, value = info.split("=")
+            cookie.set(key, value)
+    cookie.set("MLOGIN", "1;")
+    
+    # 随意选择了一个超话尝试了一下
+    page_id = "100808066f8f58c6a0520a79d77ce704ab5ae6"
+    headers = {
+        "accept-encoding": "gzip, deflate, br",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36",
+        "accept": "application/json, text/plain, */*",
+        "referer": "https://m.weibo.cn/p/%s" % page_id,
+        "authority": "m.weibo.cn",
+        "x-requested-with": "XMLHttpRequest",
+        "Cookie": cookie.get_cookie()
+    }
+
+    url = "https://m.weibo.cn/p/%s" % page_id
+    response = requests.get(url, headers=headers)
+    for info in response.headers["Set-Cookie"].split():
+        if info.startswith("M_WEIBOCN_PARAMS") or info.startswith("WEIBOCN_FROM"):
+            key, value = info.split("=")
+            cookie.set(key, value)
+
+    return cookie
 
 
 '''
@@ -91,7 +163,7 @@ def get_chart(cookie):
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
-        "Cookie": cookie["Cookie"]
+        "Cookie": cookie.get_cookie()
     }
 
     for rank in [3, 5, 6]:
@@ -115,8 +187,9 @@ def get_chart(cookie):
 
     # get_followers(cookie, "caixukun")
 
-def get_post_data(cookie):
-    username = "1776448504"  # TODO: change username freely
+# 从微博页面获取单条微博的评论，赞，转发数量和上头条价格
+def get_post_data(cookie, username):
+    
     url = "https://weibo.cn/%s" % username
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "lxml")
@@ -134,7 +207,7 @@ def get_post_data(cookie):
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36",
             "Accept": "application/json, text/plain, */*",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
-            "Cookie": cookie["Cookie"]
+            "Cookie": cookie.get_cookie()
         }
         data = requests.get(url, headers=headers)
         data = json.loads(data.content)
@@ -146,9 +219,9 @@ def get_post_data(cookie):
                 print(username, div_id, mid, "".join(re.findall("[(\d+)]", a.text.encode("utf-8"))))
             if a.text.encode("utf-8").startswith("转发"):
                 print(username, div_id, mid, "".join(re.findall("[(\d+)]", a.text.encode("utf-8"))))
-        print(username, div_id, mid, data["data"]["self_price"])
+        print(username, div_id, mid, data["data"]["price"])
 
-
+# 为了获取某条评论的评论，赞，转发数量，需要计算出一个这条微博的mid值
 ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 def base62_encode(num, alphabet=ALPHABET):
 
@@ -265,8 +338,126 @@ def get_all_followers(cookie):
     return filename
 
 
+'''
+curl 'https://m.weibo.cn/api/container/getIndex?containerid=1008084df10e1237b5578013705ae934cc0b5a' 
+-H 'cookie: _T_WM=2347d44799bd017a7c42d4b0778e9eff; WEIBOCN_FROM=1110006030; ALF=1530701067; SCF=Aj52M7AisY2zemY_Am0nKcL71Og-kwj4KrbW9HkL8O519CB_gPvclMRjWoBZ1JpYr7_h4F81dOxbdG6-pz2FcR0.; SUB=_2A252EWkXDeThGeVM6FQZ9yvOyD6IHXVV-ndfrDV6PUJbktBeLWjckW1NTKWBvpSLDufBiIX08-g5g_RhTpQRWURW; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFTdxv_d-bjYALZqEF93-os5JpX5K-hUgL.FoeEe0qRS0-Ee0z2dJLoI0YLxKnL1K5L1-BLxKnL12-L1h.LxKqL12-LBKMLxK-LBKBLBKMLxK-L12qL1KBLxKBLBonL1hMLxK-LBozL1h2t; SUHB=0sqROPqomMAY9G; SSOLoginState=1528109383; MLOGIN=1; M_WEIBOCN_PARAMS=luicode%3D10000011%26lfid%3D1008084df10e1237b5578013705ae934cc0b5a_-_main%26fid%3D1008084df10e1237b5578013705ae934cc0b5a%26uicode%3D10000011' 
+-H 'accept-encoding: gzip, deflate, br' 
+-H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7' 
+-H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36' 
+-H 'accept: application/json, text/plain, */*' 
+-H 'referer: https://m.weibo.cn/p/1008084df10e1237b5578013705ae934cc0b5a' 
+-H 'authority: m.weibo.cn' 
+-H 'x-requested-with: XMLHttpRequest' 
+--compressed
+'''
+# 获取用于签到的地址
+def get_super_sign_info(cookie, page_id):
+    
+    headers = {
+        "accept-encoding": "gzip, deflate, br",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36",
+        "accept": "application/json, text/plain, */*",
+        "referer": "https://m.weibo.cn/p/%s" % page_id,
+        "authority": "m.weibo.cn",
+        "x-requested-with": "XMLHttpRequest",
+        "Cookie": cookie.get_cookie()
+    }
+
+    url = "https://m.weibo.cn/api/container/getIndex?containerid=%s" % page_id
+    response = requests.get(url, headers=headers)
+    data = json.loads(response.content)
+    return data["data"]["pageInfo"]["toolbar_menus"][0]["scheme"]
+    
+
+'''
+curl 'https://m.weibo.cn/api/config' 
+-H cookie 
+-H 'accept-encoding: gzip, deflate, br' 
+-H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7' 
+-H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36' 
+-H 'accept: application/json, text/plain, */*' 
+-H 'referer: https://m.weibo.cn/p/1008084df10e1237b5578013705ae934cc0b5a' 
+-H 'authority: m.weibo.cn' 
+-H 'x-requested-with: XMLHttpRequest' --compressed
+'''
+# 获取用于签到的st数据，需要作为data post到服务器
+def get_config(cookie, page_id):
+    
+    headers = {
+        "accept-encoding": "gzip, deflate, br",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36",
+        "accept": "application/json, text/plain, */*",
+        "referer": "https://m.weibo.cn/p/%s" % page_id,
+        "authority": "m.weibo.cn",
+        "x-requested-with": "XMLHttpRequest",
+        "Cookie": cookie.get_cookie()
+    }
+
+    url = "https://m.weibo.cn/api/config"
+    response = requests.get(url, headers=headers)
+    data = json.loads(response.content)
+    return data["data"]["st"]
+
+
+'''
+curl 'https://m.weibo.cn/api/container/button?sign=44b7be&request_url=http%3A%2F%2Fi.huati.weibo.com%2Fmobile%2Fsuper%2Factive_checkin%3Fpageid%3D10080877197fd1ded939d5a32cac51e9200c47' 
+-H 'cookie: _T_WM=2347d44799bd017a7c42d4b0778e9eff; 
+    WEIBOCN_FROM=1110006030; 
+    ALF=1530701067; 
+    SCF=Aj52M7AisY2zemY_Am0nKcL71Og-kwj4KrbW9HkL8O519CB_gPvclMRjWoBZ1JpYr7_h4F81dOxbdG6-pz2FcR0.; 
+    SUB=_2A252EWkXDeThGeVM6FQZ9yvOyD6IHXVV-ndfrDV6PUJbktBeLWjckW1NTKWBvpSLDufBiIX08-g5g_RhTpQRWURW; 
+    SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFTdxv_d-bjYALZqEF93-os5JpX5K-hUgL.FoeEe0qRS0-Ee0z2dJLoI0YLxKnL1K5L1-BLxKnL12-L1h.LxKqL12-LBKMLxK-LBKBLBKMLxK-L12qL1KBLxKBLBonL1hMLxK-LBozL1h2t; 
+    SUHB=0sqROPqomMAY9G; 
+    SSOLoginState=1528109383; 
+    MLOGIN=1; 
+    M_WEIBOCN_PARAMS=luicode%3D10000011%26lfid%3D10080877197fd1ded939d5a32cac51e9200c47_-_main%26fid%3D10080877197fd1ded939d5a32cac51e9200c47_-_main%26uicode%3D10000011' 
+-H 'origin: https://m.weibo.cn' 
+-H 'accept-encoding: gzip, deflate, br' 
+-H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7' 
+-H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36' 
+-H 'content-type: application/x-www-form-urlencoded' 
+-H 'accept: application/json, text/plain, */*' 
+-H 'referer: https://m.weibo.cn/p/10080877197fd1ded939d5a32cac51e9200c47' 
+-H 'authority: m.weibo.cn' 
+-H 'x-requested-with: XMLHttpRequest' 
+--data 'st=fcc0da' --compressed
+'''
+
+# 获取签到信息
+def get_sign_rank(cookie, page_id):
+    
+    url = "https://m.weibo.cn%s" % get_super_sign_info(cookie, page_id)
+    
+    st = get_config(cookie, page_id)
+    post_data = {"st": st.encode("ascii")}
+
+    headers = {
+        "accept-encoding": "gzip, deflate, br",
+        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
+        "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36",
+        "content-type": "application/x-www-form-urlencoded",
+        "accept": "application/json, text/plain, */*",
+        "referer": "https://m.weibo.cn/p/%s" % page_id,
+        "authority": "m.weibo.cn",
+        "x-requested-with": "XMLHttpRequest",
+        "Cookie": cookie.get_cookie()
+    }
+    response = requests.post(url, headers=headers, data=post_data)
+    data = json.loads(response.content)
+    print(data)
+    print(data["data"]["msg"])
+
+    
+
 if __name__ == "__main__":
     username, password = sys.argv[1], sys.argv[2]
-    # cookie = get_cookie(username, password)
-    # get_chart(cookie)
-    get_cookie_with_selenium(username, password)
+    cookie = get_cookie(username, password)
+    #get_chart(cookie)
+
+    username = "1776448504"  # 微博页面的id
+    get_post_data(cookie, username)
+
+    page_id = "10080877197fd1ded939d5a32cac51e9200c47"  # 超话的页面id
+    #get_sign_rank(cookie)
