@@ -454,10 +454,10 @@ def get_sign_rank(cookie, page_id):
 if __name__ == "__main__":
     username, password = sys.argv[1], sys.argv[2]
     cookie = get_cookie(username, password)
-    #get_chart(cookie)
+    get_chart(cookie)
 
     username = "1776448504"  # 微博页面的id
     get_post_data(cookie, username)
 
     page_id = "10080877197fd1ded939d5a32cac51e9200c47"  # 超话的页面id
-    #get_sign_rank(cookie)
+    get_sign_rank(cookie, page_id)
