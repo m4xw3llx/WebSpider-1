@@ -275,69 +275,6 @@ def url_to_mid(url):
     return int(''.join(result))
 
 
-def get_followers(cookie, name):
-
-    def retrive_followers_content(cookie, username):
-        url = "https://weibo.cn/%s?display=0&retcode=6102" % username
-        response = requests.get(url, "html", cookies=cookie)
-        return response
-
-    def extract_follower_from_content(content):
-        selector = etree.HTML(content)
-        str_gz = selector.xpath("//div[@class='tip2']/a/text()")[1]
-        pattern = r"\d+\.?\d*"
-        guid = re.findall(pattern, str_gz, re.M)
-        followers = int(guid[0])
-        return followers
-
-    username = "caizicaixukun"
-    response = retrive_followers_content(cookie, username)
-    if response is None:
-        return None
-    start_time = response.start_time.strftime("%Y%m%d,%H:%M:%S.%f")
-    finish_time = response.finish_time.strftime("%Y%m%d,%H:%M:%S.%f")
-    followers = extract_follower_from_content(response.get_html())
-    return start_time, finish_time, name, username, followers
-
-
-def get_all_followers(cookie):
-    def print_follower_count_header(f):
-        raise
-
-    date = datetime.date.today().strftime("%Y%m%d")
-    filename = "%s_follower_counts.csv" % date
-
-    usernames = []
-    with open("weibo_ids.csv") as f:
-        for line in f.readlines():
-            segs = line.strip().split(",")
-            name = segs[0].decode("GB2312").encode("utf-8")
-            username = segs[2]
-            if username == "id":
-                continue
-            usernames.append((name, username))
-
-    is_file = os.path.isfile(filename)
-    with open(filename, "a") as f:
-        if not is_file:
-            print_follower_count_header(f)
-        # username = "caizicaixukun"
-        for name, username in usernames:
-            utils.log_print("[** LOG **] Get followers %s" % name)
-            res = get_followers(cookie, name, username)
-            if res is None:
-                utils.log_print("[** ERROR LOG **] Failed getting followers %s" % name)
-                date = datetime.date.today().strftime("%Y%m%d")
-                time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
-                with open(".%s_error.log" % date, "a") as f_err:
-                    print("Failed", time, name, username, file=f_err)
-            else:
-                utils.log_print("[** LOG **] Succeed getting followers %s" % name)
-                start_time, finish_time, name, username, followers = res
-                print(start_time, finish_time, name, username, followers)
-    return filename
-
-
 '''
 curl 'https://m.weibo.cn/api/container/getIndex?containerid=1008084df10e1237b5578013705ae934cc0b5a' 
 -H 'cookie: _T_WM=2347d44799bd017a7c42d4b0778e9eff; WEIBOCN_FROM=1110006030; ALF=1530701067; SCF=Aj52M7AisY2zemY_Am0nKcL71Og-kwj4KrbW9HkL8O519CB_gPvclMRjWoBZ1JpYr7_h4F81dOxbdG6-pz2FcR0.; SUB=_2A252EWkXDeThGeVM6FQZ9yvOyD6IHXVV-ndfrDV6PUJbktBeLWjckW1NTKWBvpSLDufBiIX08-g5g_RhTpQRWURW; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFTdxv_d-bjYALZqEF93-os5JpX5K-hUgL.FoeEe0qRS0-Ee0z2dJLoI0YLxKnL1K5L1-BLxKnL12-L1h.LxKqL12-LBKMLxK-LBKBLBKMLxK-L12qL1KBLxKBLBonL1hMLxK-LBozL1h2t; SUHB=0sqROPqomMAY9G; SSOLoginState=1528109383; MLOGIN=1; M_WEIBOCN_PARAMS=luicode%3D10000011%26lfid%3D1008084df10e1237b5578013705ae934cc0b5a_-_main%26fid%3D1008084df10e1237b5578013705ae934cc0b5a%26uicode%3D10000011' 
@@ -449,15 +386,100 @@ def get_sign_rank(cookie, page_id):
     print(data)
     print(data["data"]["msg"])
 
-    
+
+# curl 'https://weibo.cn/1776448504?display=0&retcode=6102' 
+# -H 'authority: weibo.cn' 
+# -H 'cache-control: max-age=0' 
+# -H 'upgrade-insecure-requests: 1' 
+# -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36' 
+# -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' 
+# -H 'accept-encoding: gzip, deflate, br' 
+# -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7' 
+# -H 'cookie: SCF=Aj52M7AisY2zemY_Am0nKcL71Og-kwj4KrbW9HkL8O51er4-8_hatNoK5GhMB9THAX-jLQ5lBb1bhJdL4-4FbCU.; SUHB=0U1Zf5YC5ZOjsN; SSOLoginState=1530191206; ALF=1532783206; _T_WM=4c148c3fdf2acdf922c47fca32e3f91b' 
+# --compressed
+def get_followers(cookie, name, username):
+
+    def retrive_followers_content(cookie, username):
+        url = "https://weibo.cn/%s?display=0&retcode=6102" % username
+        headers = {
+            "authority": "weibo.cn",
+            "cache-control": "max-age=0",
+            "upgrade-insecure-requests": "1",
+            "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36",
+            "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+            "accept-encoding": "gzip, deflate, br",
+            "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
+            "Cookie": cookie.get_cookie()
+        }
+        response = requests.get(url, headers=headers)
+        return response
+
+    def extract_follower_from_content(content):
+        selector = etree.HTML(content)
+        str_gz = selector.xpath("//div[@class='tip2']/a/text()")[1]
+        pattern = r"\d+\.?\d*"
+        guid = re.findall(pattern, str_gz, re.M)
+        followers = int(guid[0])
+        return followers
+
+    #username = "caizicaixukun"
+    response = retrive_followers_content(cookie, username)
+    if response is None:
+        return None
+    #start_time = response.start_time.strftime("%Y%m%d,%H:%M:%S.%f")
+    #finish_time = response.finish_time.strftime("%Y%m%d,%H:%M:%S.%f")
+    followers = extract_follower_from_content(response.content)
+    #return start_time, finish_time, name, username, followers
+    return name, username, followers
+
+
+def get_all_followers(cookie):
+    def print_follower_count_header(f):
+        print("name,username,followers")
+
+    date = datetime.date.today().strftime("%Y%m%d")
+    filename = "%s_follower_counts.csv" % date
+
+    usernames = []
+    with open("weibo_ids.csv") as f:
+        for line in f.readlines():
+            segs = line.strip().split(",")
+            name = segs[0].decode("GB2312").encode("utf-8")
+            username = segs[2]
+            if username == "id":
+                continue
+            usernames.append((name, username))
+
+    is_file = os.path.isfile(filename)
+    with open(filename, "a") as f:
+        if not is_file:
+            print_follower_count_header(f)
+        # username = "caizicaixukun"
+        for name, username in usernames:
+            utils.log_print("[** LOG **] Get followers %s" % name)
+            res = get_followers(cookie, name, username)
+            if res is None:
+                utils.log_print("[** ERROR LOG **] Failed getting followers %s" % name)
+                date = datetime.date.today().strftime("%Y%m%d")
+                time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
+                with open(".%s_error.log" % date, "a") as f_err:
+                    print("Failed", time, name, username, file=f_err)
+            else:
+                utils.log_print("[** LOG **] Succeed getting followers %s" % name)
+                name, username, followers = res
+                print(name, username, followers)
+    return filename
+
 
 if __name__ == "__main__":
     username, password = sys.argv[1], sys.argv[2]
     cookie = get_cookie(username, password)
-    get_chart(cookie)
+    
+    #get_chart(cookie)
 
     username = "1776448504"  # 微博页面的id
-    get_post_data(cookie, username)
+    get_all_followers(cookie)
+    #get_post_data(cookie, username)
 
-    page_id = "10080877197fd1ded939d5a32cac51e9200c47"  # 超话的页面id
-    get_sign_rank(cookie, page_id)
+    #page_id = "10080877197fd1ded939d5a32cac51e9200c47"  # 超话的页面id
+    #get_sign_rank(cookie, page_id)
