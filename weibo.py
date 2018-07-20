@@ -471,6 +471,7 @@ def get_post_data(cookie, username, name, f):
 
         div_id = div.get("id")
         assert div_id.startswith("M_")
+        weibo_url = "https://www.weibo.com/%s/%s" % (username, div_id[2:])
         mid = url_to_mid(div_id[2:])
         url = "https://pay.biz.weibo.com/aj/getprice/advance?mid=%s&touid=%s" % (mid, username)
         headers = {
@@ -498,7 +499,7 @@ def get_post_data(cookie, username, name, f):
         try:
             time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
             utils.log_print("[** LOG **] Succeed getting post data %s" % name)
-            print("%s,%s,%s,%s,%s,%s,%s,%s" % (time, name, username, mid, comment, up, forward, data["data"]["price"]), file=f)
+            print("%s,%s,%s,%s,%s,%s,%s,%s,%s" % (time, name, username, mid, comment, up, forward, data["data"]["price"], weibo_url), file=f)
         except:
             utils.log_print("[** ERROR LOG **] Price is not available %s with mid=%s" % (name, mid))
 
@@ -522,7 +523,7 @@ def get_all_post_data(cookie):
     is_file = os.path.isfile(filename)
     with open(filename, "a") as f:
         if not is_file:
-            print("date,time,name,username,mid,comment,up,forward,price", file=f)
+            print("date,time,name,username,mid,comment,up,forward,price,address", file=f)
         for name, username in usernames:
             utils.log_print("[** LOG **] Get post data %s" % name)
             res = get_post_data(cookie, username, name, f)
@@ -533,8 +534,8 @@ if __name__ == "__main__":
     cookie = get_cookie(username, password)
     
     #get_chart(cookie)
-    #get_all_post_data(cookie)
-    get_all_followers(cookie)
+    get_all_post_data(cookie)
+    #get_all_followers(cookie)
     
 
     #page_id = "10080877197fd1ded939d5a32cac51e9200c47"  # 超话的页面id
