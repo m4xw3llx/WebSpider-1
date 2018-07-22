@@ -511,6 +511,7 @@ def get_post_data(cookie, username, name, f):
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
             "Cookie": cookie.get_cookie()
         }
+        print("URL is %r" % url)
         data = requests.get(url, headers=headers)
         if not data:
             utils.log_print(
