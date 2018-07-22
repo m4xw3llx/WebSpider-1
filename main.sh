@@ -22,7 +22,7 @@ do
     FILENAME=`python vote.py`
     iconv -f UTF-8 -t GB18030 ${FILENAME} > ${DATE}_礼物数.csv
 
-    FILENAMES=`python weibo.py`
+    FILENAMES=`python weibo.py wzm1990@gmail.com KawasakiH2`
     FILENAME=$(echo `echo $FILENAMES` | cut -d \  -f 1)
     iconv -f UTF-8 -t GB18030 $FILENAME > ${DATE}_粉丝数.csv
 
