@@ -27,14 +27,18 @@ r = requests.get(url, cookies={"Cookie": "_T_WM=ec1a4454c0d9d6d28bb947142ca09f4f
 """
 
 # in case old cookie method fails
+
+
 def get_cookie_with_selenium(username, password):
     chromePath = "/usr/local/bin/chromedriver"
     wd = webdriver.Chrome(executable_path=chromePath)
     loginUrl = 'http://www.weibo.com/login.php'
     wd.get(loginUrl)
     wd.find_element_by_xpath('//*[@id="loginname"]').send_keys(username)
-    wd.find_element_by_xpath('//*[@id="pl_login_form"]/div/div[3]/div[2]/div/input').send_keys(password)
-    wd.find_element_by_xpath('//*[@id="pl_login_form"]/div/div[3]/div[6]/a').click()
+    wd.find_element_by_xpath(
+        '//*[@id="pl_login_form"]/div/div[3]/div[2]/div/input').send_keys(password)
+    wd.find_element_by_xpath(
+        '//*[@id="pl_login_form"]/div/div[3]/div[6]/a').click()
 
     req = requests.Session()
     cookies = wd.get_cookies()
@@ -84,7 +88,7 @@ def get_cookie(username, password):
                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/64.0.3282.167 Safari/537.36"}
     url = "https://passport.weibo.cn/sso/login"
     response = requests.post(url, data=payload, headers=headers)
-    
+
     for info in response.headers["Set-Cookie"].split():
         if info.startswith("SUB=") or info.startswith("SUHB=") or info.startswith("SCF=") or info.startswith("SSOLoginState="):
             key, value = info.split("=")
@@ -119,7 +123,7 @@ def get_cookie(username, password):
             key, value = info.split("=")
             cookie.set(key, value)
     cookie.set("MLOGIN", "1;")
-    
+
     # 随意选择了一个超话尝试了一下
     page_id = "100808066f8f58c6a0520a79d77ce704ab5ae6"
     headers = {
@@ -139,11 +143,9 @@ def get_cookie(username, password):
         if info.startswith("M_WEIBOCN_PARAMS") or info.startswith("WEIBOCN_FROM"):
             key, value = info.split("=")
             cookie.set(key, value)
+            utils.log_print("[** LOG **] Get Current Cookie %s" % cookie)
 
     return cookie
-
-
-
 
     # get_followers(cookie, "caixukun")
 
@@ -151,8 +153,9 @@ def get_cookie(username, password):
 
 # 为了获取某条评论的评论，赞，转发数量，需要计算出一个这条微博的mid值
 ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-def base62_encode(num, alphabet=ALPHABET):
 
+
+def base62_encode(num, alphabet=ALPHABET):
     """Encode a number in Base X
     `num`: The number to encode
     `alphabet`: The alphabet to use for encoding
@@ -167,6 +170,7 @@ def base62_encode(num, alphabet=ALPHABET):
         arr.append(alphabet[rem])
     arr.reverse()
     return ''.join(arr)
+
 
 def base62_decode(string, alphabet=ALPHABET):
     """Decode a Base X encoded string into the number
@@ -186,6 +190,7 @@ def base62_decode(string, alphabet=ALPHABET):
         idx += 1
 
     return num
+
 
 def url_to_mid(url):
 
@@ -216,8 +221,10 @@ curl 'https://m.weibo.cn/api/container/getIndex?containerid=1008084df10e1237b557
 --compressed
 '''
 # 获取用于签到的地址
+
+
 def get_super_sign_info(cookie, page_id):
-    
+
     headers = {
         "accept-encoding": "gzip, deflate, br",
         "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
@@ -233,7 +240,7 @@ def get_super_sign_info(cookie, page_id):
     response = requests.get(url, headers=headers)
     data = json.loads(response.content)
     return data["data"]["pageInfo"]["toolbar_menus"][0]["scheme"]
-    
+
 
 '''
 curl 'https://m.weibo.cn/api/config' 
@@ -247,8 +254,10 @@ curl 'https://m.weibo.cn/api/config'
 -H 'x-requested-with: XMLHttpRequest' --compressed
 '''
 # 获取用于签到的st数据，需要作为data post到服务器
+
+
 def get_config(cookie, page_id):
-    
+
     headers = {
         "accept-encoding": "gzip, deflate, br",
         "accept-language": "zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7",
@@ -291,10 +300,12 @@ curl 'https://m.weibo.cn/api/container/button?sign=44b7be&request_url=http%3A%2F
 '''
 
 # 获取签到信息
+
+
 def get_sign_rank(cookie, page_id):
-    
+
     url = "https://m.weibo.cn%s" % get_super_sign_info(cookie, page_id)
-    
+
     st = get_config(cookie, page_id)
     post_data = {"st": st.encode("ascii")}
 
@@ -315,15 +326,15 @@ def get_sign_rank(cookie, page_id):
     print(data["data"]["msg"])
 
 
-# curl 'https://weibo.cn/1776448504?display=0&retcode=6102' 
-# -H 'authority: weibo.cn' 
-# -H 'cache-control: max-age=0' 
-# -H 'upgrade-insecure-requests: 1' 
-# -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36' 
-# -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8' 
-# -H 'accept-encoding: gzip, deflate, br' 
-# -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7' 
-# -H 'cookie: SCF=Aj52M7AisY2zemY_Am0nKcL71Og-kwj4KrbW9HkL8O51er4-8_hatNoK5GhMB9THAX-jLQ5lBb1bhJdL4-4FbCU.; SUHB=0U1Zf5YC5ZOjsN; SSOLoginState=1530191206; ALF=1532783206; _T_WM=4c148c3fdf2acdf922c47fca32e3f91b' 
+# curl 'https://weibo.cn/1776448504?display=0&retcode=6102'
+# -H 'authority: weibo.cn'
+# -H 'cache-control: max-age=0'
+# -H 'upgrade-insecure-requests: 1'
+# -H 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36'
+# -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'
+# -H 'accept-encoding: gzip, deflate, br'
+# -H 'accept-language: zh-CN,zh;q=0.9,en;q=0.8,zh-TW;q=0.7'
+# -H 'cookie: SCF=Aj52M7AisY2zemY_Am0nKcL71Og-kwj4KrbW9HkL8O51er4-8_hatNoK5GhMB9THAX-jLQ5lBb1bhJdL4-4FbCU.; SUHB=0U1Zf5YC5ZOjsN; SSOLoginState=1530191206; ALF=1532783206; _T_WM=4c148c3fdf2acdf922c47fca32e3f91b'
 # --compressed
 def get_followers(cookie, name, username):
 
@@ -357,7 +368,7 @@ def get_followers(cookie, name, username):
     #start_time = response.start_time.strftime("%Y%m%d,%H:%M:%S.%f")
     #finish_time = response.finish_time.strftime("%Y%m%d,%H:%M:%S.%f")
     followers = extract_follower_from_content(response.content)
-    #return start_time, finish_time, name, username, followers
+    # return start_time, finish_time, name, username, followers
     return name, username, followers
 
 
@@ -387,13 +398,15 @@ def get_all_followers(cookie):
             utils.log_print("[** LOG **] Get followers %s" % name)
             res = get_followers(cookie, name, username)
             if res is None:
-                utils.log_print("[** ERROR LOG **] Failed getting followers %s" % name)
+                utils.log_print(
+                    "[** ERROR LOG **] Failed getting followers %s" % name)
                 date = datetime.date.today().strftime("%Y%m%d")
                 time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
                 with open(".%s_error.log" % date, "a") as f_err:
                     print("Failed", time, name, username, file=f_err)
             else:
-                utils.log_print("[** LOG **] Succeed getting followers %s" % name)
+                utils.log_print(
+                    "[** LOG **] Succeed getting followers %s" % name)
                 name, username, followers = res
                 time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
                 print("%s,%s,%s,%s" % (time, name, username, followers), file=f)
@@ -412,6 +425,8 @@ curl -H 'Host: chart.weibo.com'
 '''
 
 # 获取明星势力榜的信息
+
+
 def get_chart(cookie):
 
     headers = {
@@ -432,32 +447,44 @@ def get_chart(cookie):
 
         for rank in [3, 5, 6]:
             for page in [1, 2]:
-                url = "http://chart.weibo.com/chart?rank_type=%s&page=%s" % (rank, page)
+                url = "http://chart.weibo.com/chart?rank_type=%s&page=%s" % (
+                    rank, page)
                 response = requests.get(url, headers=headers)
                 if not response:
-                    utils.log_print("[** ERROR LOG **] Failed getting chart with rank=%s and page=%s" % (rank, page))
+                    utils.log_print(
+                        "[** ERROR LOG **] Failed getting chart with rank=%s and page=%s" % (rank, page))
                     continue
 
                 soup = BeautifulSoup(response.content, "lxml")
-                name_divs = soup.find_all("div", class_=re.compile("sr_name S_func1"))
-                read_num_divs = soup.find_all("li", class_=re.compile("arr1 clearfix"))
-                interaction_num_divs = soup.find_all("li", class_=re.compile("arr2 clearfix"))
-                affection_num_divs = soup.find_all("li", class_=re.compile("arr3 clearfix"))
-                loveness_num_divs = soup.find_all("li", class_=re.compile("arr4 clearfix"))
+                name_divs = soup.find_all(
+                    "div", class_=re.compile("sr_name S_func1"))
+                read_num_divs = soup.find_all(
+                    "li", class_=re.compile("arr1 clearfix"))
+                interaction_num_divs = soup.find_all(
+                    "li", class_=re.compile("arr2 clearfix"))
+                affection_num_divs = soup.find_all(
+                    "li", class_=re.compile("arr3 clearfix"))
+                loveness_num_divs = soup.find_all(
+                    "li", class_=re.compile("arr4 clearfix"))
                 for name_div, read_div, inter_div, affect_div, loveness_div in zip(name_divs, read_num_divs, interaction_num_divs, affection_num_divs, loveness_num_divs):
                     name = name_div.text.encode("utf-8")
-                    read_num = read_div.find_all("span", class_="pro_num")[0].text.encode("utf-8")
-                    interaction_num = inter_div.find_all("span", class_="pro_num")[0].text.encode("utf-8")
-                    affection_num = affect_div.find_all("span", class_="pro_num")[0].text.encode("utf-8")
-                    loveness_num = loveness_div.find_all("span", class_="pro_num")[0].text.encode("utf-8")
+                    read_num = read_div.find_all("span", class_="pro_num")[
+                        0].text.encode("utf-8")
+                    interaction_num = inter_div.find_all("span", class_="pro_num")[
+                        0].text.encode("utf-8")
+                    affection_num = affect_div.find_all("span", class_="pro_num")[
+                        0].text.encode("utf-8")
+                    loveness_num = loveness_div.find_all("span", class_="pro_num")[
+                        0].text.encode("utf-8")
                     time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
-                    utils.log_print("[** LOG **] Succeed getting chart %s" % name)
+                    utils.log_print(
+                        "[** LOG **] Succeed getting chart %s" % name)
                     print("%s,%s,%s,%s,%s,%s" % (time, name, read_num, interaction_num, affection_num, loveness_num), file=f)
 
 
 # 从微博页面获取单条微博的评论，赞，转发数量和上头条价格
 def get_post_data(cookie, username, name, f):
-    
+
     url = "https://weibo.cn/%s" % username
     response = requests.get(url)
     if not response:
@@ -473,7 +500,8 @@ def get_post_data(cookie, username, name, f):
         assert div_id.startswith("M_")
         weibo_url = "https://www.weibo.com/%s/%s" % (username, div_id[2:])
         mid = url_to_mid(div_id[2:])
-        url = "https://pay.biz.weibo.com/aj/getprice/advance?mid=%s&touid=%s" % (mid, username)
+        url = "https://pay.biz.weibo.com/aj/getprice/advance?mid=%s&touid=%s" % (
+            mid, username)
         headers = {
             "Host": "pay.biz.weibo.com",
             "Accept-Encoding": "gzip, deflate, br",
@@ -484,24 +512,28 @@ def get_post_data(cookie, username, name, f):
         }
         data = requests.get(url, headers=headers)
         if not data:
-            utils.log_print("[** ERROR LOG**] Failed to get weibo details %s" % url)
+            utils.log_print(
+                "[** ERROR LOG**] Failed to get weibo details %s" % url)
             continue
 
         data = json.loads(data.content)
 
         for a in div.find_all("a"):
             if a.text.encode("utf-8").startswith("评论"):
-                comment = "".join(re.findall("[(\d+)]", a.text.encode("utf-8")))
+                comment = "".join(re.findall(
+                    "[(\d+)]", a.text.encode("utf-8")))
             if a.text.encode("utf-8").startswith("赞"):
-                up =  "".join(re.findall("[(\d+)]", a.text.encode("utf-8")))
+                up = "".join(re.findall("[(\d+)]", a.text.encode("utf-8")))
             if a.text.encode("utf-8").startswith("转发"):
-                forward = "".join(re.findall("[(\d+)]", a.text.encode("utf-8")))
+                forward = "".join(re.findall(
+                    "[(\d+)]", a.text.encode("utf-8")))
         try:
             time = datetime.datetime.now().strftime("%Y%m%d,%H:%M:%S.%f")
             utils.log_print("[** LOG **] Succeed getting post data %s" % name)
             print("%s,%s,%s,%s,%s,%s,%s,%s,%s" % (time, name, username, mid, comment, up, forward, data["data"]["price"], weibo_url), file=f)
         except:
-            utils.log_print("[** ERROR LOG **] Price is not available %s with mid=%s" % (name, mid))
+            utils.log_print(
+                "[** ERROR LOG **] Price is not available %s with mid=%s" % (name, mid))
 
 
 def get_all_post_data(cookie):
@@ -532,11 +564,10 @@ def get_all_post_data(cookie):
 if __name__ == "__main__":
     username, password = sys.argv[1], sys.argv[2]
     cookie = get_cookie(username, password)
-    
-    #get_chart(cookie)
-    get_all_post_data(cookie)
-    #get_all_followers(cookie)
-    
 
-    #page_id = "10080877197fd1ded939d5a32cac51e9200c47"  # 超话的页面id
+    # get_chart(cookie)
+    get_all_post_data(cookie)
+    # get_all_followers(cookie)
+
+    # page_id = "10080877197fd1ded939d5a32cac51e9200c47"  # 超话的页面id
     #get_sign_rank(cookie, page_id)
