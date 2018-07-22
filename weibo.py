@@ -552,13 +552,13 @@ def get_all_post_data(cookie):
             if username == "id":
                 continue
             usernames.append((name, username))
-
     is_file = os.path.isfile(filename)
     with open(filename, "a") as f:
         if not is_file:
             print("date,time,name,username,mid,comment,up,forward,price,address", file=f)
         for name, username in usernames:
-            utils.log_print("[** LOG **] Get post data %s" % name)
+            utils.log_print("[** LOG **] Get post data %s, %s, %s" %
+                            (name, username, cookie.get_cookie()))
             res = get_post_data(cookie, username, name, f)
 
 
