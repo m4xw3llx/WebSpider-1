@@ -136,14 +136,14 @@ def get_cookie(username, password):
         "x-requested-with": "XMLHttpRequest",
         "Cookie": cookie.get_cookie()
     }
-    utils.log_print("[** LOG **] Get Cookies %s" % cookie)
+    utils.log_print("[** LOG **] Get Cookies %r" % cookie)
     url = "https://m.weibo.cn/p/%s" % page_id
     response = requests.get(url, headers=headers)
     for info in response.headers["Set-Cookie"].split():
         if info.startswith("M_WEIBOCN_PARAMS") or info.startswith("WEIBOCN_FROM"):
             key, value = info.split("=")
             cookie.set(key, value)
-            utils.log_print("[** LOG **] Get Current Cookie %s" % cookie)
+            utils.log_print("[** LOG **] Get Current Cookie %r" % cookie)
 
     return cookie
 
