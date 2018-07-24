@@ -12,22 +12,34 @@
 
 # Need to send files ${DATE}_粉丝数.csv ${DATE}_视频观看数.csv ${DATE}_礼物数.csv ${DATE}_喜爱值.csv through email
 
+USERNAME=$1
+PASSWORD=$2
+
 while true
 do
     echo `date`
     DATE=`date +%Y%m%d`
-    FILENAME=`python iqiyi.py`
-    iconv -f UTF-8 -t GB18030 ${FILENAME} > ${DATE}_视频观看数.csv
 
-    FILENAME=`python vote.py`
-    iconv -f UTF-8 -t GB18030 ${FILENAME} > ${DATE}_礼物数.csv
+    python weibo.py -u $USERNAME -p $PASSWORD -m chart
+    python weibo.py -u $USERNAME -p $PASSWORD -m post
+    python weibo.py -u $USERNAME -p $PASSWORD -m followers
 
-    FILENAMES=`python weibo.py`
-    FILENAME=$(echo `echo $FILENAMES` | cut -d \  -f 1)
-    iconv -f UTF-8 -t GB18030 $FILENAME > ${DATE}_粉丝数.csv
+    FILENAME=${DATE}_chart.csv
+    iconv -f UTF-8 -t GB18030 ${FILENAME} > ${DATE}_喜爱值.csv
 
-    FILENAME=$(echo `echo $FILENAMES` | cut -d \  -f 2)
-    iconv -f UTF-8 -t GB18030 $FILENAME > ${DATE}_喜爱值.csv
+    FILENAME=${DATE}_post_data.csv
+    iconv -f UTF-8 -t GB18030 ${FILENAME} > ${DATE}_微博具体信息.csv
 
-    sleep 3600
+    FILENAME=${DATE}_follower_counts.csv
+    iconv -f UTF-8 -t GB18030 ${FILENAME} > ${DATE}_关注数.csv
+
+
+    #FILENAMES=`python weibo.py`
+    #FILENAME=$(echo `echo $FILENAMES` | cut -d \  -f 1)
+    #iconv -f UTF-8 -t GB18030 $FILENAME > ${DATE}_粉丝数.csv
+
+    #FILENAME=$(echo `echo $FILENAMES` | cut -d \  -f 2)
+    #iconv -f UTF-8 -t GB18030 $FILENAME > ${DATE}_喜爱值.csv
+
+    sleep 300
 done
