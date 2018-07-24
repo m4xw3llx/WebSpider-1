@@ -10,6 +10,7 @@ import datetime
 import os
 import json
 import sys
+import argparse
 
 
 """
@@ -530,12 +531,23 @@ def get_all_post_data(cookie):
 
 
 if __name__ == "__main__":
-    username, password = sys.argv[1], sys.argv[2]
-    cookie = get_cookie(username, password)
+
+    parser = argparse.ArgumentParser(description="Process weibo")
+    parser.add_argument("-u", "--username", type=str, required=True)
+    parser.add_argument("-p", "--password", type=str, required=True)
+    parser.add_argument("-m", "--mode", type=str, required=True, choices=["chart", "post", "followers"])
+    args = parser.parse_args()
+
+    cookie = get_cookie(args.username, args.password)
     
-    #get_chart(cookie)
-    get_all_post_data(cookie)
-    #get_all_followers(cookie)
+    if args.mode == "chart":
+        get_chart(cookie)
+    elif args.mode == "post":
+        get_all_post_data(cookie)
+    elif args.mode == "followers":
+        get_all_followers(cookie)
+    else:
+        assert False
     
 
     #page_id = "10080877197fd1ded939d5a32cac51e9200c47"  # 超话的页面id
