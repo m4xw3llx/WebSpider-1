@@ -34,15 +34,9 @@ do
     iconv -f UTF-8 -t GB18030 ${FILENAME} > ${DATE}_关注数.csv
 
 
-<<<<<<< HEAD
-    FILENAMES=`python weibo.py wzm1990@gmail.com KawasakiH2`
-    FILENAME=$(echo `echo $FILENAMES` | cut -d \  -f 1)
-    iconv -f UTF-8 -t GB18030 $FILENAME > ${DATE}_粉丝数.csv
-=======
     #FILENAMES=`python weibo.py`
     #FILENAME=$(echo `echo $FILENAMES` | cut -d \  -f 1)
     #iconv -f UTF-8 -t GB18030 $FILENAME > ${DATE}_粉丝数.csv
->>>>>>> upstream/master
 
     #FILENAME=$(echo `echo $FILENAMES` | cut -d \  -f 2)
     #iconv -f UTF-8 -t GB18030 $FILENAME > ${DATE}_喜爱值.csv
